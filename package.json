@@ -1,0 +1,62 @@
+{
+  "name": "cache-composer",
+  "version": "1.0.0",
+  "description": "Advanced multi-layer caching with memory, Redis, and file storage. Features automatic invalidation, cache warming, and analytics.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "example:basic": "node examples/nodejs-example.js",
+    "example:advanced": "node examples/advanced-usage.js",
+    "example:redis": "node examples/redis-example.js"
+  },
+  "keywords": [
+    "cache",
+    "caching",
+    "redis",
+    "memory-cache",
+    "file-cache",
+    "multi-layer",
+    "cache-invalidation",
+    "cache-warming",
+    "analytics",
+    "performance",
+    "lru",
+    "lfu",
+    "ttl",
+    "react",
+    "nodejs",
+    "typescript"
+  ],
+  "author": "codecrypt1112",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/codecrypt112/Cache-Composer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/codecrypt112/Cache-Composer/issues"
+  },
+  "homepage": "https://github.com/codecrypt112/Cache-Composer#readme",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0"
+  },
+  "peerDependencies": {
+    "ioredis": "^5.3.0"
+  },
+  "peerDependenciesMeta": {
+    "ioredis": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

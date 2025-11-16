@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cache Composer - Browser Example</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    .stats {
+      background: #f5f5f5;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      cursor: pointer;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .result {
+      background: #e9ecef;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <h1>Cache Composer - Browser Demo</h1>
+  
+  <div>
+    <button onclick="testBasicCache()">Test Basic Cache</button>
+    <button onclick="testGetOrSet()">Test Get or Set</button>
+    <button onclick="testTags()">Test Tag Invalidation</button>
+    <button onclick="showStats()">Show Statistics</button>
+    <button onclick="clearCache()">Clear Cache</button>
+  </div>
+
+  <div id="result" class="result"></div>
+  <div id="stats" class="stats"></div>
+
+  <script type="module">
+    // In a real browser app, you'd import from node_modules or a CDN
+    // For this demo, we'll create a simplified version
+    
+    class SimpleBrowserCache {
+      constructor() {
+        this.cache = new Map();
+        this.stats = { hits: 0, misses: 0, sets: 0 };
+      }
+
+      async get(key) {
+        const entry = this.cache.get(key);
+        if (!entry) {
+          this.stats.misses++;
+          return null;
+        }
+        if (entry.expiresAt < Date.now()) {
+          this.cache.delete(key);
+          this.stats.misses++;
+          return null;
+        }
+        this.stats.hits++;
+        return entry.value;
+      }
+
+      async set(key, value, options = {}) {
+        const ttl = options.ttl || 60000;
+        this.cache.set(key, {
+          value,
+          expiresAt: Date.now() + ttl,
+          tags: options.tags
+        });
+        this.stats.sets++;
+      }
+
+      async getOrSet(key, loader, options = {}) {
+        const cached = await this.get(key);
+        if (cached !== null) return cached;
+        const value = await loader();
+        await this.set(key, value, options);
+        return value;
+      }
+
+      async deleteByTag(tag) {
+        let count = 0;
+        for (const [key, entry] of this.cache.entries()) {
+          if (entry.tags?.includes(tag)) {
+            this.cache.delete(key);
+            count++;
+          }
+        }
+        return count;
+      }
+
+      async clear() {
+        this.cache.clear();
+      }
+
+      getStats() {
+        const total = this.stats.hits + this.stats.misses;
+        return {
+          ...this.stats,
+          hitRate: total > 0 ? this.stats.hits / total : 0,
+          size: this.cache.size
+        };
+      }
+    }
+
+    // Create global cache instance
+    window.cache = new SimpleBrowserCache();
+
+    window.testBasicCache = async function() {
+      await cache.set('user:1', { name: 'Alice', email: 'alice@example.com' });
+      const user = await cache.get('user:1');
+      showResult('Basic Cache', user);
+    };
+
+    window.testGetOrSet = async function() {
+      const data = await cache.getOrSet('api-data', async () => {
+        showResult('Loading...', 'Fetching from API...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return { data: 'Fresh data', timestamp: Date.now() };
+      }, { ttl: 10000 });
+      showResult('Get or Set', data);
+    };
+
+    window.testTags = async function() {
+      await cache.set('post:1', { title: 'Post 1' }, { tags: ['posts'] });
+      await cache.set('post:2', { title: 'Post 2' }, { tags: ['posts'] });
+      await cache.set('page:1', { title: 'Page 1' }, { tags: ['pages'] });
+      
+      const deleted = await cache.deleteByTag('posts');
+      showResult('Tag Invalidation', `Deleted ${deleted} posts`);
+    };
+
+    window.showStats = function() {
+      const stats = cache.getStats();
+      document.getElementById('stats').innerHTML = `
+        <h3>Cache Statistics</h3>
+        <p><strong>Hit Rate:</strong> ${(stats.hitRate * 100).toFixed(2)}%</p>
+        <p><strong>Hits:</strong> ${stats.hits}</p>
+        <p><strong>Misses:</strong> ${stats.misses}</p>
+        <p><strong>Sets:</strong> ${stats.sets}</p>
+        <p><strong>Cache Size:</strong> ${stats.size} items</p>
+      `;
+    };
+
+    window.clearCache = async function() {
+      await cache.clear();
+      showResult('Clear', 'Cache cleared successfully');
+      showStats();
+    };
+
+    function showResult(title, data) {
+      document.getElementById('result').innerHTML = `
+        <strong>${title}:</strong><br>
+        <pre>${JSON.stringify(data, null, 2)}</pre>
+      `;
+    }
+
+    // Initial stats display
+    showStats();
+  </script>
+</body>
+</html>
